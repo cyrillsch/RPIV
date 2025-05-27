@@ -31,7 +31,7 @@ For a detailed discussion of the method, we refer to Scheidegger, Londschien and
 You can install the development version of IVDML from [GitHub](https://github.com/) with
 
 ``` {r}
-# devtools::install_github("cyrillsch/RPIV")
+devtools::install_github("cyrillsch/RPIV")
 ```
 ## Example
 
