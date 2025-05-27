@@ -119,3 +119,13 @@ test_that("RPIV_test works with dataframes and vectors with attributes", {
   expect_type(result, "list")
   expect_equal(result$variance_estimator, "heteroskedastic")
 })
+
+test_that("RPIV_test raises error if Z is not convertible to vector", {
+  set.seed(1)
+  n <- 20
+  Z <- list(a = c("a", "aa"), b = rnorm(n))
+  C <- rnorm(n)
+  X <- rnorm(n)
+  Y <- rnorm(n)
+  expect_error(RPIV_test(Y, X, C, Z))
+})
