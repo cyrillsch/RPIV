@@ -48,6 +48,14 @@ test_that("RPIV_test works with clustering", {
   result <- RPIV_test(Y, X, C, Z, clustering = cluster_ids, variance_estimator = "cluster")
   expect_type(result, "list")
   expect_equal(result$variance_estimator, "cluster")
+  cluster_ids <- as.factor(cluster_ids)
+  result <- RPIV_test(Y, X, C, Z, clustering = cluster_ids, variance_estimator = "cluster")
+  expect_type(result, "list")
+  expect_equal(result$variance_estimator, "cluster")
+  cluster_ids <- as.character(cluster_ids)
+  result <- RPIV_test(Y, X, C, Z, clustering = cluster_ids, variance_estimator = "cluster")
+  expect_type(result, "list")
+  expect_equal(result$variance_estimator, "cluster")
 })
 
 
