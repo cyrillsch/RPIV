@@ -86,7 +86,7 @@ test_that("RPIV_test throws errors on bad input", {
   X <- rnorm(n)
   Y <- rnorm(n)
 
-  expect_error(RPIV_test(Y[1:19], X = X, Z = Z), "X must have the same number of rows")
+  expect_error(RPIV_test(Y[1:19], X = X, Z = Z))
   expect_error(RPIV_test(Y, X, Z = matrix(Z, ncol = 1), frac_A = -0.1), "frac_A must be NULL or a numeric scalar in")
   expect_error(RPIV_test(Y, X, Z = Z, regr_par = list(num_trees = 5)), "regr_par contains invalid entries")
   expect_error(RPIV_test(Y, X, Z = Z, variance_estimator = "homoscedastic"), "variance_estimator must be one or more of")
@@ -102,6 +102,20 @@ test_that("RPIV_test works with fit_intercept = FALSE", {
 
   result <- RPIV_test(Y, X, C, Z, fit_intercept = FALSE)
 
+  expect_type(result, "list")
+  expect_equal(result$variance_estimator, "heteroskedastic")
+})
+
+
+test_that("RPIV_test works with dataframes and vectors with attributes", {
+  set.seed(1)
+  n <- 20
+  Z <- data.frame(cbind(rnorm(n), rnorm(n)))
+  C <- data.frame(cbind(rnorm(n), rnorm(n)))
+  X <- data.frame(cbind(rnorm(n), rnorm(n)))
+  Y <- rnorm(n)
+  attr(Y, "label") <- "testlabel"
+  result <- RPIV_test(Y, X, C, Z)
   expect_type(result, "list")
   expect_equal(result$variance_estimator, "heteroskedastic")
 })

@@ -149,19 +149,29 @@ calc_sigmahatw2 <- function(variance_estimator, res, w, ZAw, clustering_test = N
 RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
                       variance_estimator = "heteroskedastic", clustering = NULL,
                       upper_clip_quantile = 0.8, regr_par = list(), fit_intercept = TRUE){
-  # Check input
-  if (!is.numeric(Y) || !is.vector(Y)) stop("Y must be a numeric vector.")
-  if (!is.numeric(X)) stop("X must be a numeric matrix or vector.")
-  if (!is.null(C) && !is.numeric(C)) stop("C must be NULL, a numeric matrix, or a numeric vector.")
-  if (!is.numeric(Z)) stop("Z must be a numeric matrix or vector.")
-
-  N <- length(Y)
-
-  if (NROW(X) != N) stop("X must have the same number of rows as length of Y.")
-  if (!is.null(C)) {
-    if (NROW(C) != N) stop("C must have the same number of rows as Y.")
+  # Check input and convert to numeric or matrix
+  Y <- try(as.numeric(Y), silent = TRUE)
+  if (inherits(Y, "try-error")){
+    stop("Y cannot be converted to a vector.")
   }
-  if (NROW(Z) != N) stop("Z must have the same number of rows as Y.")
+  N <- length(Y)
+  matrix_ZXC <- function(var, var_name){
+    if (!is.null(var)){
+      mat <- try(as.matrix(var), silent = TRUE)
+      if (inherits(mat, "try-error")) {
+        stop(paste(var_name, " cannot be converted to a matrix. Make sure that it is a vector, matrix or data frame.", sep = ""))
+      }
+      if (nrow(mat) != N) {
+        stop(paste("The number of rows in ", var_name, " must match the length of Y.", sep = ""))
+      }
+      return(mat)
+    } else {
+      return(NULL)
+    }
+  }
+  Z <- matrix_ZXC(Z, "Z")
+  X <- matrix_ZXC(X, "X")
+  C <- matrix_ZXC(C, "C")
   if (!is.null(clustering)) {
     if (length(clustering) != N) stop("clustering must have the same length as Y.")
     if (!is.character(clustering) && !is.factor(clustering) && !is.numeric(clustering)) {
