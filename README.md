@@ -33,8 +33,6 @@ You can install the development version of IVDML from
 
 ``` r
 devtools::install_github("cyrillsch/RPIV")
-#> Skipping install of 'RPIV' from a github remote, the SHA1 (cb085085) has not changed since last install.
-#>   Use `force = TRUE` to force installation
 ```
 
 ## Example
