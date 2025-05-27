@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 # RPIV
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/cyrillsch/RPIV/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/cyrillsch/RPIV/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The RPIV package implements a residual prediction test for the well specification of linear instrumental variable (IV) models, as presented in Scheidegger, Londschien and Bühlmann (2025). For a response $Y_i\in \mathbb R$, endogenous explanatory variables $X_i\in \mathbb R^p$ and instruments $Z_i\in \mathbb R^d$ ($d\geq p$), it tests the well-specification of the linear IV model (``is the linear IV model appropriate?''). More formally, it tests the null hypothesis

@@ -4,6 +4,8 @@
 # RPIV
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/cyrillsch/RPIV/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/cyrillsch/RPIV/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The RPIV package implements a residual prediction test for the well
