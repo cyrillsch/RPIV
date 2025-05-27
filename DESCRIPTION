@@ -1,0 +1,23 @@
+Package: RPIV
+Title: Residual Prediction Test for Well-Specification of  Instrumental Variable Models
+Version: 0.0.0.9000
+Authors@R: 
+     person("Cyrill", "Scheidegger",
+    email = "cyrill.scheidegger@stat.math.ethz.ch",
+    role = c("aut", "cre", "cph"), 
+    comment = c(ORCID = "0009-0005-2851-1384"))
+Description: A test for the well-specification of the linear instrumental
+    variable model. The test is based on trying to predict the residuals of a
+    two-stage least-squares regression using a random forest. Details can be
+    found in Scheidegger, Londschien and Bühlmann (2025) "A residual prediction
+    test for the well-specification of linear instrumental variable models" 
+    <doi:?????/arXiv.????>.
+URL: ???
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: ranger, stats
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
