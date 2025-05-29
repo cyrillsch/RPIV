@@ -29,7 +29,7 @@ RPIV_test(
 
 \item{frac_A}{A numeric scalar between 0 and 1 or \code{NULL}. The fraction of the sample used for training (sample splitting). Default is \code{min(0.5, exp(1)/log(n))}, where \code{n} is the sample size.}
 
-\item{gamma}{A non-negative scalar. If the variance estimator is less than gamma times the noise level, the p-value is set to 1. Default is 0.05.}
+\item{gamma}{A non-negative scalar. If the variance estimator is less than gamma times the noise level (as estimated as by the mean of the squared residuals), gamma times the noise level is used as variance estimator.}
 
 \item{variance_estimator}{Character string or vector. One or more of \code{"homoskedastic"}, \code{"heteroskedastic"}, \code{"cluster"}. Specifies the types of variance estimation used.}
 
@@ -46,8 +46,8 @@ If a single variance estimator is used, returns a list with:
 \describe{
 \item{p_value}{p-value of the residual prediction test.}
 \item{test_statistic}{The value of the test statistic.}
-\item{keep_test_statistic}{Logical. Whether the test statistic is kept (based on if the variance fraction is smaller than gamma). If not, the p-value is set to 1 regardless of the value of the test statistic.}
 \item{var_fraction}{The estimated variance fraction, i.e., variance estimator divided by noise level estmate.}
+\item{T_null}{The value of the initial test statistic. If var_fraction >= gamma, it is equal to test_statistic, otherwise, it has larger absolute value.}
 \item{variance_estimator}{The variance estimator used.}
 }
 If multiple estimators are supplied, returns a named list of such results for each estimator.

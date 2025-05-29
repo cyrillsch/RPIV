@@ -7,10 +7,10 @@ test_that("RPIV_test returns correct structure for default arguments", {
   Y <- X - C  + rnorm(n)
   result <- RPIV_test(Y, X, C, Z)
   expect_type(result, "list")
-  expect_named(result, c("p_value", "test_statistic", "keep_test_statistic", "var_fraction", "variance_estimator"))
+  expect_named(result, c("p_value", "test_statistic", "var_fraction", "T_null", "variance_estimator"))
   expect_true(is.numeric(result$p_value))
   expect_true(is.numeric(result$test_statistic))
-  expect_true(is.logical(result$keep_test_statistic))
+  expect_true(is.numeric(result$T_null))
   expect_true(is.numeric(result$var_fraction))
   expect_equal(result$variance_estimator, "heteroskedastic")
 })
@@ -33,8 +33,28 @@ test_that("RPIV_test handles multiple variance estimators", {
   result <- RPIV_test(Y, X, Z = Z, variance_estimator = c("homoskedastic", "heteroskedastic"))
   expect_type(result, "list")
   expect_named(result, c("homoskedastic", "heteroskedastic"))
-  expect_true(all(c("p_value", "test_statistic", "keep_test_statistic", "var_fraction", "variance_estimator") %in%
+  expect_true(all(c("p_value", "test_statistic", "var_fraction", "T_null", "variance_estimator") %in%
                     names(result$homoskedastic)))
+})
+
+test_that("RPIV_test yields different test_statistic and T_null if gamma is large", {
+  set.seed(1)
+  n <- 20
+  Z <- rnorm(n)
+  X <- Z + rnorm(n)
+  Y <- X + rnorm(n)
+  result <- RPIV_test(Y, X, Z = Z, gamma = 1)
+  expect_false(result$test_statistic == result$T_null)
+})
+
+test_that("RPIV_test yields same test_statistic and T_null if gamma is small", {
+  set.seed(1)
+  n <- 20
+  Z <- rnorm(n)
+  X <- Z + rnorm(n)
+  Y <- X + rnorm(n)
+  result <- RPIV_test(Y, X, Z = Z, gamma = 0.00001)
+  expect_equal(result$test_statistic, result$T_null)
 })
 
 test_that("RPIV_test works with clustering", {

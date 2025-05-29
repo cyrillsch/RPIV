@@ -99,7 +99,7 @@ calc_sigmahatw2 <- function(variance_estimator, res, w, ZAw, clustering_test = N
 #' @param C A numeric matrix, vector or `NULL`. The additional exogenous explanatory variables (optional).
 #' @param Z A numeric matrix or vector. The instruments.
 #' @param frac_A A numeric scalar between 0 and 1 or `NULL`. The fraction of the sample used for training (sample splitting). Default is `min(0.5, exp(1)/log(n))`, where `n` is the sample size.
-#' @param gamma A non-negative scalar. If the variance estimator is less than gamma times the noise level, the p-value is set to 1. Default is 0.05.
+#' @param gamma A non-negative scalar. If the variance estimator is less than gamma times the noise level (as estimated as by the mean of the squared residuals), gamma times the noise level is used as variance estimator.
 #' @param variance_estimator Character string or vector. One or more of `"homoskedastic"`, `"heteroskedastic"`, `"cluster"`. Specifies the types of variance estimation used.
 #' @param clustering A vector of cluster identifiers or `NULL`. Observations with the same value of `clustering` belong to the same cluster. Required if `variance_estimator` includes `"cluster"`.
 #' @param upper_clip_quantile A scalar between 0 and 1. The estimated weight-function will be clipped at the corresponding quantile of the random forest predictions on the auxiliary sample. Use 0 to use the sign of the predictions. Default is 0.8.
@@ -110,8 +110,8 @@ calc_sigmahatw2 <- function(variance_estimator, res, w, ZAw, clustering_test = N
 #' \describe{
 #'   \item{p_value}{p-value of the residual prediction test.}
 #'   \item{test_statistic}{The value of the test statistic.}
-#'   \item{keep_test_statistic}{Logical. Whether the test statistic is kept (based on if the variance fraction is smaller than gamma). If not, the p-value is set to 1 regardless of the value of the test statistic.}
 #'   \item{var_fraction}{The estimated variance fraction, i.e., variance estimator divided by noise level estmate.}
+#'   \item{T_null}{The value of the initial test statistic. If var_fraction >= gamma, it is equal to test_statistic, otherwise, it has larger absolute value.}
 #'   \item{variance_estimator}{The variance estimator used.}
 #' }
 #' If multiple estimators are supplied, returns a named list of such results for each estimator.
@@ -176,6 +176,9 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
     if (length(clustering) != N) stop("clustering must have the same length as Y.")
     if (!is.character(clustering) && !is.factor(clustering) && !is.numeric(clustering)) {
       stop("clustering must be a vector of identifiers (numeric, factor, or character).")
+    }
+    if (is.factor(clustering)){
+      clustering <- as.numeric(clustering)
     }
     if (!("cluster" %in% variance_estimator)) {
       warning("Cluster structure is present but 'cluster' is not in variance_estimator.")
@@ -277,12 +280,16 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
   list_results <- list()
   for(v_e in variance_estimator){
     sigmahatw2 <- calc_sigmahatw2(v_e, res_test, w, ZAw, clustering_test)
-    T0w <- sum(w * res_test) / sqrt(n0 * sigmahatw2)
     var_fraction <- sigmahatw2 / mean(res_test^2)
-    keep_T0 <- var_fraction >= gamma
-    pw <- keep_T0 * (1 - pnorm(T0w)) + (1 - keep_T0)
-    list_results[[v_e]] <- list(p_value = pw, test_statistic = T0w,
-                 keep_test_statistic = keep_T0, var_fraction = var_fraction, variance_estimator = v_e)
+    T_null <- sum(w * res_test) / sqrt(n0 * sigmahatw2)
+    if(var_fraction < gamma){
+      sigmahatw2 <- gamma * mean(res_test^2)
+    }
+    test_statistic <- sum(w * res_test) / sqrt(n0 * sigmahatw2)
+    pw <- 1 - pnorm(test_statistic)
+    list_results[[v_e]] <- list(p_value = pw, test_statistic = test_statistic,
+                                var_fraction = var_fraction, T_null = T_null,
+                                variance_estimator = v_e)
   }
   if(length(variance_estimator) == 1){
     return(list_results[[1]])
