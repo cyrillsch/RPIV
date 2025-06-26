@@ -25,7 +25,7 @@ which is implied by the well-specification of the linear IV model (with mean-ind
 
 The model allows for additional exogenous explanatory variables (``exogenous controls'') (denoted by $C$ in the R function) and an intercept, which are added both to $X$ and $Z$.
 
-For a detailed discussion of the method, we refer to Scheidegger, Londschien and Bühlmann (2025). We now demonstrate, how the RPIV package is used in practice.
+For a detailed discussion of the method, we refer to Scheidegger, Londschien and Bühlmann (2025). A python implementation is available in the package [ivmodels](https://github.com/mlondschien/ivmodels). We now demonstrate, how the RPIV package is used in practice.
 
 ## Installation
 
@@ -87,9 +87,9 @@ result$cluster$p_value
 We see that only using the cluster-robust variance estimator does not reject the null hypothesis at significance level $\alpha = 0.05$.
 
 ## More Examples
-More examples can be found in Scheidegger, Londschien and Bühlmann (2025) and the associated GithHub repository ????.
+More examples can be found in Scheidegger, Londschien and Bühlmann (2025) and the associated GithHub repository [RPIV_Application](https://github.com/cyrillsch/RPIV_Application).
 
 
 ## References
-Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, arXiv:????, 2025.
+Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, arXiv:2506.12771, 2025.
 

@@ -13,24 +13,25 @@ specification of linear instrumental variable (IV) models, as presented
 in Scheidegger, Londschien and Bühlmann (2025). For a response
 $Y_i\in \mathbb R$, endogenous explanatory variables
 $X_i\in \mathbb R^p$ and instruments $Z_i\in \mathbb R^d$ ($d\geq p$),
-it tests the well-specification of the linear IV model ("is the
-linear IV model appropriate?"). More formally, it tests the null
+it tests the well-specification of the linear IV model (\`\`is the
+linear IV model appropriate?’’). More formally, it tests the null
 hypothesis
 $$H_0: \exists \beta\in \mathbb R^p\text{ s.t. } \mathbb E[Y_i - X_i^T\beta|Z_i] = 0 \text{ a.s., } i =1,\ldots, n,$$
 which is implied by the well-specification of the linear IV model (with
 mean-independence assumption on the errors).
 
 The model allows for additional exogenous explanatory variables
-("exogenous controls") (denoted by $C$ in the R function) and an
+(\`\`exogenous controls’’) (denoted by $C$ in the R function) and an
 intercept, which are added both to $X$ and $Z$.
 
 For a detailed discussion of the method, we refer to Scheidegger,
-Londschien and Bühlmann (2025). We now demonstrate, how the RPIV package
-is used in practice.
+Londschien and Bühlmann (2025). A python implementation is available in
+the package [ivmodels](https://github.com/mlondschien/ivmodels). We now
+demonstrate, how the RPIV package is used in practice.
 
 ## Installation
 
-You can install the development version of IVRP from
+You can install the development version of IVDML from
 [GitHub](https://github.com/) with
 
 ``` r
@@ -110,10 +111,11 @@ reject the null hypothesis at significance level $\alpha = 0.05$.
 ## More Examples
 
 More examples can be found in Scheidegger, Londschien and Bühlmann
-(2025) and the associated GithHub repository ????.
+(2025) and the associated GithHub repository
+[RPIV_Application](https://github.com/cyrillsch/RPIV_Application).
 
 ## References
 
 Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual
 prediction test for the well-specification of linear instrumental
-variable models. Preprint, arXiv:????, 2025.
+variable models. Preprint, arXiv:2506.12771, 2025.

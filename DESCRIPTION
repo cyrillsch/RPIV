@@ -11,8 +11,8 @@ Description: A test for the well-specification of the linear instrumental
     two-stage least-squares regression using a random forest. Details can be
     found in Scheidegger, Londschien and Bühlmann (2025) "A residual prediction
     test for the well-specification of linear instrumental variable models" 
-    <doi:?????/arXiv.????>.
-URL: ???
+    <doi:10.48550/arXiv.2506.12771>.
+URL: https://github.com/cyrillsch/RPIV
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
