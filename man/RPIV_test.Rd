@@ -65,7 +65,7 @@ On the auxiliary sample, a random forest is used to predict the two-stage least 
 The test statistic is the scalar product of the two-stage least-squares residuals with a clipped
 and rescaled version of the learned function evaluated on the main sample divided by an estimator of its standard deviation.
 
-If \code{clustering} is supplied, sample splitting is done at cluster level (also for \code{variance_estimator} "homoskedastic"\code{or}"heteroskedastic"`).
+If \code{clustering} is supplied, sample splitting is done at cluster level (also for \code{variance_estimator} \code{"homoskedastic"} or \code{"heteroskedastic"}).
 }
 \examples{
 set.seed(1)
@@ -83,5 +83,5 @@ RPIV_test(Y2, X, C, Z)
 
 }
 \references{
-Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, arXiv:????, 2025.
+Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, \url{doi:10.48550/arXiv.2506.12771}, 2025.
 }

@@ -122,7 +122,7 @@ calc_sigmahatw2 <- function(variance_estimator, res, w, ZAw, clustering_test = N
 #' The test statistic is the scalar product of the two-stage least-squares residuals with a clipped
 #' and rescaled version of the learned function evaluated on the main sample divided by an estimator of its standard deviation.
 #'
-#' If `clustering` is supplied, sample splitting is done at cluster level (also for `variance_estimator` "homoskedastic"` or `"heteroskedastic"`).
+#' If `clustering` is supplied, sample splitting is done at cluster level (also for `variance_estimator` `"homoskedastic"` or `"heteroskedastic"`).
 #'
 #'@examples
 #' set.seed(1)
@@ -139,7 +139,7 @@ calc_sigmahatw2 <- function(variance_estimator, res, w, ZAw, clustering_test = N
 #'
 #'
 #' @references
-#' Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, arXiv:????, 2025.
+#' Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, <doi:10.48550/arXiv.2506.12771>, 2025.
 #'
 #' @importFrom stats formula lm pnorm predict quantile
 #' @import ranger
