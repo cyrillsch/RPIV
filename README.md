@@ -31,7 +31,13 @@ demonstrate, how the RPIV package is used in practice.
 
 ## Installation
 
-You can install the development version of IVDML from
+You can install the released CRAN version of RPIV with
+
+``` r
+install.packages("RPIV")
+```
+
+You can install the development version of RPIV from
 [GitHub](https://github.com/) with
 
 ``` r

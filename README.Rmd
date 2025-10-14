@@ -29,7 +29,13 @@ For a detailed discussion of the method, we refer to Scheidegger, Londschien and
 
 ## Installation
 
-You can install the development version of IVDML from [GitHub](https://github.com/) with
+You can install the released CRAN version of RPIV with
+
+``` r
+install.packages("RPIV")
+```
+
+You can install the development version of RPIV from [GitHub](https://github.com/) with
 
 ``` r
 devtools::install_github("cyrillsch/RPIV")
