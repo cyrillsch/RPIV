@@ -1,6 +1,6 @@
 Package: RPIV
 Title: Residual Prediction Test for Well-Specification of Instrumental Variable Models
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: 
      person("Cyrill", "Scheidegger",
     email = "cyrill.scheidegger@stat.math.ethz.ch",
