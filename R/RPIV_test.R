@@ -1,17 +1,20 @@
-
+clip_w <- function(w_train, w0, upper_clip_quantile){
+  if(upper_clip_quantile == 0){
+    w <- sign(w0)
+  } else {
+    Kmax <- quantile(abs(w_train), upper_clip_quantile)
+    w <- sign(w0) * pmin(abs(w0), Kmax) / Kmax
+  }
+  return(w)
+}
 
 
 
 get_w <- function(res_train, Ztrain, Ztest, upper_clip_quantile, regr_par){
   list_pred <- tune_rf(res_train, Ztrain, Ztest, regr_par)
-  pred_test <- list_pred$pred_test
-  pred_train <- list_pred$pred_train
-  if(upper_clip_quantile == 0){
-    w <- sign(pred_test)
-  } else {
-    Kmax <- quantile(abs(pred_train), upper_clip_quantile)
-    w <- sign(pred_test) * pmin(abs(pred_test), Kmax) / Kmax
-  }
+  w0 <- list_pred$pred_test
+  w_train <- list_pred$pred_train
+  w <- clip_w(w_train, w0, upper_clip_quantile)
   return(w)
 }
 
@@ -243,3 +246,95 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
     return(list_results)
   }
 }
+
+
+
+
+
+
+# if fit_at_tsls = TRUE, we do an initial fit of the weight function at the tsls beta, which can be used afterwards
+
+weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma = 0.05, regr_par = list(), fit_at_tsls = TRUE){
+  N <- length(Y)
+  matrix_ZXC <- function(var, var_name){
+    if (!is.null(var)){
+      mat <- try(as.matrix(var), silent = TRUE)
+      if (inherits(mat, "try-error")) {
+        stop(paste(var_name, " cannot be converted to a matrix. Make sure that it is a vector, matrix or data frame.", sep = ""))
+      }
+      if (nrow(mat) != N) {
+        stop(paste("The number of rows in ", var_name, " must match the length of Y.", sep = ""))
+      }
+      return(mat)
+    } else {
+      return(NULL)
+    }
+  }
+  Z <- matrix_ZXC(Z, "Z")
+  X <- matrix_ZXC(X, "X")
+  C <- matrix_ZXC(C, "C")
+  C <- cbind(rep(1, N), C)
+  frac_A <- min(0.5, exp(1)/log(N))
+  train <- sample(1:N, round(frac_A * N), replace = FALSE)
+
+  Ytrain <- Y[train]
+  Ytest <- Y[-train]
+  Xtrain <- as.matrix(X[train, ])
+  Xtest <- as.matrix(X[-train, ])
+  Ctrain <- as.matrix(C[train, ])
+  Ctest <- as.matrix(C[-train, ])
+  Ztrain <- as.matrix(Z[train, ])
+  Ztest <- as.matrix(Z[-train, ])
+
+  MYtrain <- lm(Ytrain ~ -1 + Ctrain)$residuals
+  MXtrain <- as.matrix(lm(Xtrain ~ -1 + Ctrain)$residuals)
+  if(fit_at_tsls){
+    fitted_first_stage <- lm(MXtrain ~ -1 + Ztrain)$fitted.values
+    beta_tsls <- lm(MYtrain ~ -1 + fitted_first_stage)$coefficients
+    resid_tsls <- MYtrain - MXtrain %*% beta_tsls
+    tuned_rf <- tune_rf(resid_tsls, Ztrain, Ztest = NULL, regr_par)
+  }
+  # type is either "tune_and_fit", "fit", "recalculate"
+  # "tune_and_fit" retunes and fits the random forest. "fit" uses the tuning parameters of the tsls residuals. "recalculate" uses the partition
+  # obtained by the random_forest at the tsls residuals and only recalculates the cell means
+  get_T_stat <- function(beta, type){
+    resid <- MYtrain - MXtrain %*% beta
+    if(type == "tune_and_fit"){
+      rf_beta <- tune_rf(resid, Ztrain, Ztest, regr_par)
+      w_train <- rf_beta$pred_train
+      w0 <- rf_beta$pred_test
+    } else if(type == "fit"){
+      if(!fit_at_tsls){stop("fit_at_tsls needs to be TRUE in order to use type == 'fit'.")}
+      rf_beta <- get_rf_predictions_from_tuned(resid, Ztrain, Ztest, tuned_rf$par_opt)
+      w_train <- rf_beta$pred_train
+      w0 <- rf_beta$pred_test
+    } else if(type == "recalculate"){
+      if(!fit_at_tsls){stop("fit_at_tsls needs to be TRUE in order to use type == 'refit'.")}
+      list_pred <- refit_from_partition(resid, Ztrain, Ztest, tuned_rf$mod)
+      w_train <- list_pred$pred_insample
+      w0 <- list_pred$pred_outsample
+    } else {
+      stop("type needs to be one of 'tune_and_fit', 'fit', or 'recalculate'.")
+    }
+    w <- clip_w(w_train, w0, upper_clip_quantile)
+    R_part <- Ytest - Xtest %*% beta
+    MR_part <- lm(R_part ~ -1 + Ctest)$residuals
+
+    Mw_part <- lm(w ~ -1 + Ctest)$residuals
+
+    ## Here should also go the clustered stuff etc.
+    sigmahatw20_part <- mean(MR_part^2 * Mw_part^2) - mean(MR_part * Mw_part)^2
+    var_fraction_part <- sigmahatw20_part/ mean(MR_part^2)
+    if(var_fraction_part >= gamma){
+      sigmahatw2_part <- sigmahatw20_part
+    } else {
+      sigmahatw2_part <- gamma * mean(MR_part^2)
+    }
+    T_part <- sum(MR_part * Mw_part)/sqrt(length(Ytest))/sqrt(sigmahatw2_part)
+    return(T_part)
+  }
+  return(get_T_stat)
+}
+
+
+# multiple_beta_handling is either "tune_everywhere", "tune_at_liml" or "partition_at_liml"
