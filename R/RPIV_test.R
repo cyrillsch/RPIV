@@ -38,7 +38,7 @@ calc_sigmahatw2_weak <- function(variance_estimator, MR_part, Mw_part, clusterin
     return(mean(MR_part^2) * mean(Mw_part^2))
   }
   if(variance_estimator == "heteroskedastic"){
-    return((mean(MR_part^2 * Mw_part^2) - mean(MR_part * Mw_part)^2)
+    return(mean(MR_part^2 * Mw_part^2) - mean(MR_part * Mw_part)^2)
   }
   if(variance_estimator == "cluster"){
     ##DOUBLE CHECK HERE
@@ -190,7 +190,6 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
     stop("fit_intercept must be a logical scalar (TRUE or FALSE).")
   }
 
-
   if(is.null(frac_A)){
     frac_A <- min(0.5, exp(1) / log(N))
   }
@@ -214,10 +213,10 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
   }
   Ytrain <- Y[train]
   Ytest <- Y[-train]
-  Xbartrain <- Xbar[train, ]
-  Xbartest <- Xbar[-train, ]
-  Zbartrain <- Zbar[train, ]
-  Zbartest <- Zbar[-train, ]
+  Xbartrain <- as.matrix(Xbar[train, ])
+  Xbartest <- as.matrix(Xbar[-train, ])
+  Zbartrain <- as.matrix(Zbar[train, ])
+  Zbartest <- as.matrix(Zbar[-train, ])
 
   # TSLS on training set
   first_stage_train <- lm(Xbartrain ~ -1 + Zbartrain)
@@ -267,11 +266,88 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
 
 
 
-# if fit_at_tsls = TRUE, we do an initial fit of the weight function at the tsls beta, which can be used afterwards
+#' Weak IV Robust Residual Prediction Test for Linear Instrumental Variable Models
+#'
+#' Constructs a hypothesis test for the well-specification of linear instrumental variable
+#' (IV) model at a particular value of the parameter.
+#' More specifically, it tests the null-hypothesis
+#' \eqn{H_0(\beta_0): \mathbb E[Y-X^T\beta_0|Z] = 0.}
+#' It uses sample splitting and a random forest to try to predict the
+#' residuals from the instruments \eqn{Z}. The testing procedure remains valid
+#' under weak identification. The function returns a closure that must be evaluated at a candidate parameter value.
+#' @param Y A numeric vector. The outcome variable.
+#' @param X A numeric matrix or vector. The endogenous explanatory variables.
+#' @param C A numeric matrix, vector or `NULL`. The additional exogenous explanatory variables (optional).
+#' @param Z A numeric matrix or vector. The instruments.
+#' @param frac_A A numeric scalar between 0 and 1 or `NULL`. The fraction of the sample used for training (sample splitting). Default is `min(0.5, exp(1)/log(n))`, where `n` is the sample size.
+#' @param gamma A non-negative scalar. If the variance estimator is less than gamma times the noise level (as estimated as by the mean of the squared residuals), gamma times the noise level is used as variance estimator.
+#' @param variance_estimator Character string or vector. One or more of `"homoskedastic"`, `"heteroskedastic"`, `"cluster"`. Specifies the types of variance estimation used.
+#' @param clustering A vector of cluster identifiers or `NULL`. Observations with the same value of `clustering` belong to the same cluster. Required if `variance_estimator` includes `"cluster"`.
+#' @param upper_clip_quantile A scalar between 0 and 1. The estimated weight-function will be clipped at the corresponding quantile of the random forest predictions on the auxiliary sample. Use 0 to use the sign of the predictions. Default is 0.8.
+#' @param regr_par A list of parameters passed to the random forest regression model. Supports `num.trees`, `num_mtry` (number of different mtry values to try out) or a vector `mtry`, a vector `max.depth`, `num_min.node.size` (number of different min.node.size values to try out) or a vector `min.node.size`.
+#' @param fit_intercept Logical. Should an intercept be included in the model (added to C)? Default is `TRUE`.
+#' @param fit_at_tsls Logical. If `TRUE`, a random forest is initially tuned and fitted at the TSLS estimator. Subsequent evaluations may reuse this tuning or the learned partition structure.
+#'
+#' @return
+#' A function `f(beta, type)` that computes the weak RPIV test statistic.
+#'
+#' * `beta` is a numeric vector of coefficients.
+#' * `type` determines how the weight function is constructed:
+#'   \describe{
+#'     \item{`"tune_and_fit"`}{Re-tunes and refits the random forest.}
+#'     \item{`"fit"`}{Uses tuning parameters obtained at TSLS to fit a new random forest.}
+#'     \item{`"recalculate"`}{Reuses the partition obtained from the random forest with at the TSLS-residuals and recomputes leaf means.}
+#'   }
+#'
+#' The returned value is a named numeric vector with one entry per variance estimator.
+#' The resulting test statistic asymptotically follows a standard Gaussian distribution.
+#' P-values can be obtained from the test statistic `T_stat` as `1 - pnorm(T_stat)`.
+#'
+#' @details
+#' The procedure is based on orthogonalized residuals and sample splitting.
+#' A random forest is trained on an auxiliary sample to predict structural residuals
+#' from the instruments. The resulting weight function is then partialled out with
+#' respect to exogenous covariates and evaluated on the main sample.
+#'
+#' Sample splitting is performed either observation-wise or at the cluster level.
+#' Residuals and weight functions are orthogonalized with respect to exogenous
+#' covariates to ensure validity under weak identification.
+#'
+#' @examples
+#' set.seed(1)
+#' n <- 100
+#' Z <- rnorm(n)
+#' H <- rnorm(n)
+#' C <- rnorm(n)
+#' X <- Z + rnorm(n) + H
+#' Y1 <- X - C - H + rnorm(n)
+#' Y2 <- X - C - H + rnorm(n) + Z^2
+#' test_statistic1 <- weak_RPIV_test(Y1, X, C, Z)
+#' test_statistic1(1, "tune_and_fit")
+#' test_statistic1(1, "fit")
+#' test_statistic1(1, "recalculate")
+#' test_statistic1(0, "tune_and_fit")
+#' test_statistic1(0, "fit")
+#' test_statistic1(0, "recalculate")
+#' test_statistic2 <- weak_RPIV_test(Y2, X, C, Z)
+#' test_statistic2(1, "tune_and_fit")
+#' test_statistic2(1, "fit")
+#' test_statistic2(1, "recalculate")
+#'
+#' @references
+#' Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, <doi:10.48550/arXiv.2506.12771>, 2025.
+#'
+#' @importFrom stats formula lm
+#' @import ranger
 #' @export
-weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma = 0.05,
+weak_RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
                            variance_estimator = "heteroskedastic", clustering = NULL,
-                           regr_par = list(), fit_intercept = TRUE, fit_at_tsls = TRUE){
+                           upper_clip_quantile = 0.8, regr_par = list(),
+                           fit_intercept = TRUE, fit_at_tsls = TRUE){
+  Y <- try(as.numeric(Y), silent = TRUE)
+  if (inherits(Y, "try-error")){
+    stop("Y cannot be converted to a vector.")
+  }
   N <- length(Y)
   matrix_ZXC <- function(var, var_name){
     if (!is.null(var)){
@@ -290,10 +366,63 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma =
   Z <- matrix_ZXC(Z, "Z")
   X <- matrix_ZXC(X, "X")
   C <- matrix_ZXC(C, "C")
-  if(fit_intercept){
-    C <- cbind(rep(1, N), C)
+  if (!is.null(clustering)) {
+    if (length(clustering) != N) stop("clustering must have the same length as Y.")
+    if (!is.character(clustering) && !is.factor(clustering) && !is.numeric(clustering)) {
+      stop("clustering must be a vector of identifiers (numeric, factor, or character).")
+    }
+    if (is.factor(clustering)){
+      clustering <- as.numeric(clustering)
+    }
+    if (!("cluster" %in% variance_estimator)) {
+      warning("Cluster structure is present but 'cluster' is not in variance_estimator.")
+    }
   }
-  frac_A <- min(0.5, exp(1)/log(N))
+
+  if ("cluster" %in% variance_estimator && is.null(clustering)) {
+    stop("clustering must be supplied when using variance_estimator = 'cluster'.")
+  }
+  if (!is.null(frac_A)) {
+    if (!is.numeric(frac_A) || length(frac_A) != 1 || frac_A <= 0 || frac_A >= 1) {
+      stop("frac_A must be NULL or a numeric scalar in (0, 1).")
+    }
+  }
+  if(is.null(frac_A)){
+    frac_A <- min(0.5, exp(1) / log(N))
+  }
+  if (!is.numeric(gamma) || length(gamma) != 1 || gamma < 0) {
+    stop("gamma must be a non-negative numeric scalar.")
+  }
+
+  allowed_estimators <- c("homoskedastic", "heteroskedastic", "cluster")
+  if (!all(variance_estimator %in% allowed_estimators)) {
+    stop(sprintf("variance_estimator must be one or more of %s.", paste(allowed_estimators, collapse = ", ")))
+  }
+
+  if (!is.numeric(upper_clip_quantile) || length(upper_clip_quantile) != 1 || upper_clip_quantile < 0 || upper_clip_quantile > 1) {
+    stop("upper_clip_quantile must be a numeric scalar in [0, 1].")
+  }
+
+  if (!is.list(regr_par)) {
+    stop("regr_par must be a list.")
+  }
+
+  if ((NCOL(X) > NCOL(Z)) && fit_at_tsls){
+    stop("Z must have at least as many columns as X in order to calculate the TSLS coefficient.")
+  }
+  allowed_regr_par_keys <- c("num.trees", "num_mtry", "mtry", "max.depth", "num_min.node.size", "min.node.size")
+  invalid_keys <- setdiff(names(regr_par), allowed_regr_par_keys)
+  if (length(invalid_keys) > 0) {
+    stop(sprintf(
+      "regr_par contains invalid entries: %s. Allowed entries are: %s.",
+      paste(invalid_keys, collapse = ", "),
+      paste(allowed_regr_par_keys, collapse = ", ")
+    ))
+  }
+  if (!is.logical(fit_intercept) || length(fit_intercept) != 1) {
+    stop("fit_intercept must be a logical scalar (TRUE or FALSE).")
+  }
+
 
   if(!is.null(clustering)){
     clusters <- unique(clustering)
@@ -305,17 +434,30 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma =
     clustering_test <- NULL
   }
 
+  if(fit_intercept){
+    C <- cbind(rep(1, N), C)
+  }
+
   Ytrain <- Y[train]
   Ytest <- Y[-train]
   Xtrain <- as.matrix(X[train, ])
   Xtest <- as.matrix(X[-train, ])
-  Ctrain <- as.matrix(C[train, ])
-  Ctest <- as.matrix(C[-train, ])
+  if(!is.null(C)){
+    Ctrain <- as.matrix(C[train, ])
+    Ctest <- as.matrix(C[-train, ])
+  }
+
   Ztrain <- as.matrix(Z[train, ])
   Ztest <- as.matrix(Z[-train, ])
 
-  MYtrain <- lm(Ytrain ~ -1 + Ctrain)$residuals
-  MXtrain <- as.matrix(lm(Xtrain ~ -1 + Ctrain)$residuals)
+  if(!is.null(C)){
+    MYtrain <- lm(Ytrain ~ -1 + Ctrain)$residuals
+    MXtrain <- as.matrix(lm(Xtrain ~ -1 + Ctrain)$residuals)
+  } else {
+    MYtrain <- Ytrain
+    MXtrain <- Xtrain
+  }
+
   if(fit_at_tsls){
     fitted_first_stage <- lm(MXtrain ~ -1 + Ztrain)$fitted.values
     beta_tsls <- lm(MYtrain ~ -1 + fitted_first_stage)$coefficients
@@ -325,7 +467,13 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma =
   # type is either "tune_and_fit", "fit", "recalculate"
   # "tune_and_fit" retunes and fits the random forest. "fit" uses the tuning parameters of the tsls residuals. "recalculate" uses the partition
   # obtained by the random_forest at the tsls residuals and only recalculates the cell means
-  get_T_stat <- function(beta, type = "tune and_ift"){
+  get_T_stat <- function(beta, type){
+    if (!is.numeric(beta) || length(beta) != ncol(MXtrain)) {
+      stop(sprintf(
+        "beta must be a numeric vector of length %d.",
+        ncol(MXtrain)
+      ))
+    }
     resid <- MYtrain - MXtrain %*% beta
     if(type == "tune_and_fit"){
       rf_beta <- tune_rf(resid, Ztrain, Ztest, regr_par)
@@ -337,7 +485,7 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma =
       w_train <- rf_beta$pred_train
       w0 <- rf_beta$pred_test
     } else if(type == "recalculate"){
-      if(!fit_at_tsls){stop("fit_at_tsls needs to be TRUE in order to use type == 'refit'.")}
+      if(!fit_at_tsls){stop("fit_at_tsls needs to be TRUE in order to use type == 'recalculate'.")}
       list_pred <- refit_from_partition(resid, Ztrain, Ztest, tuned_rf$mod)
       w_train <- list_pred$pred_insample
       w0 <- list_pred$pred_outsample
@@ -346,13 +494,17 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma =
     }
     w <- clip_w(w_train, w0, upper_clip_quantile)
     R_part <- Ytest - Xtest %*% beta
-    MR_part <- lm(R_part ~ -1 + Ctest)$residuals
-
-    Mw_part <- lm(w ~ -1 + Ctest)$residuals
+    if(!is.null(C)){
+      MR_part <- lm(R_part ~ -1 + Ctest)$residuals
+      Mw_part <- lm(w ~ -1 + Ctest)$residuals
+    } else {
+      MR_part <- R_part
+      Mw_part <- w
+    }
 
     results <- rep(NA, length(variance_estimator))
     for(i in 1:length(variance_estimator)){
-      ve <- variance_estimatore[i]
+      v_e <- variance_estimator[i]
       sigmahatw2 <- calc_sigmahatw2_weak(v_e, MR_part, Mw_part, clustering_test)
       var_fraction <- sigmahatw2 / mean(MR_part^2)
       if(var_fraction < gamma){
