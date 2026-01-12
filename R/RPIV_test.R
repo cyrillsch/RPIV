@@ -33,6 +33,21 @@ calc_sigmahatw2 <- function(variance_estimator, res, w, ZAw, clustering_test = N
   }
 }
 
+calc_sigmahatw2_weak <- function(variance_estimator, MR_part, Mw_part, clustering_test = NULL){
+  if(variance_estimator == "homoskedastic"){
+    return(mean(MR_part^2) * mean(Mw_part^2))
+  }
+  if(variance_estimator == "heteroskedastic"){
+    return((mean(MR_part^2 * Mw_part^2) - mean(MR_part * Mw_part)^2)
+  }
+  if(variance_estimator == "cluster"){
+    ##DOUBLE CHECK HERE
+    Sg <- tapply(MR_part* Mw_part, clustering_test, sum)
+    n0 <- length(Mw_part)
+    return(sum(Sg^2) / n0 - n0/length(unique(clustering_test))*sum(Sg/n0)^2)
+  }
+}
+
 
 
 #' Residual Prediction Test for Linear Instrumental Variable Models
@@ -253,8 +268,10 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
 
 
 # if fit_at_tsls = TRUE, we do an initial fit of the weight function at the tsls beta, which can be used afterwards
-
-weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma = 0.05, regr_par = list(), fit_at_tsls = TRUE){
+#' @export
+weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma = 0.05,
+                           variance_estimator = "heteroskedastic", clustering = NULL,
+                           regr_par = list(), fit_intercept = TRUE, fit_at_tsls = TRUE){
   N <- length(Y)
   matrix_ZXC <- function(var, var_name){
     if (!is.null(var)){
@@ -273,9 +290,20 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma =
   Z <- matrix_ZXC(Z, "Z")
   X <- matrix_ZXC(X, "X")
   C <- matrix_ZXC(C, "C")
-  C <- cbind(rep(1, N), C)
+  if(fit_intercept){
+    C <- cbind(rep(1, N), C)
+  }
   frac_A <- min(0.5, exp(1)/log(N))
-  train <- sample(1:N, round(frac_A * N), replace = FALSE)
+
+  if(!is.null(clustering)){
+    clusters <- unique(clustering)
+    clusters_train <- sample(clusters, round(length(clusters) * frac_A))
+    train <- which(clustering %in% clusters_train)
+    clustering_test <- clustering[-train]
+  } else {
+    train <- sample(1:N, round(N * frac_A))
+    clustering_test <- NULL
+  }
 
   Ytrain <- Y[train]
   Ytest <- Y[-train]
@@ -297,7 +325,7 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma =
   # type is either "tune_and_fit", "fit", "recalculate"
   # "tune_and_fit" retunes and fits the random forest. "fit" uses the tuning parameters of the tsls residuals. "recalculate" uses the partition
   # obtained by the random_forest at the tsls residuals and only recalculates the cell means
-  get_T_stat <- function(beta, type){
+  get_T_stat <- function(beta, type = "tune and_ift"){
     resid <- MYtrain - MXtrain %*% beta
     if(type == "tune_and_fit"){
       rf_beta <- tune_rf(resid, Ztrain, Ztest, regr_par)
@@ -322,19 +350,22 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, upper_clip_quantile = 0.8, gamma =
 
     Mw_part <- lm(w ~ -1 + Ctest)$residuals
 
-    ## Here should also go the clustered stuff etc.
-    sigmahatw20_part <- mean(MR_part^2 * Mw_part^2) - mean(MR_part * Mw_part)^2
-    var_fraction_part <- sigmahatw20_part/ mean(MR_part^2)
-    if(var_fraction_part >= gamma){
-      sigmahatw2_part <- sigmahatw20_part
-    } else {
-      sigmahatw2_part <- gamma * mean(MR_part^2)
+    results <- rep(NA, length(variance_estimator))
+    for(i in 1:length(variance_estimator)){
+      ve <- variance_estimatore[i]
+      sigmahatw2 <- calc_sigmahatw2_weak(v_e, MR_part, Mw_part, clustering_test)
+      var_fraction <- sigmahatw2 / mean(MR_part^2)
+      if(var_fraction < gamma){
+        sigmahatw2 <- gamma * mean(MR_part^2)
+      }
+      T_part <- sum(MR_part * Mw_part)/sqrt(length(Ytest))/sqrt(sigmahatw2)
+      results[i] <- T_part
     }
-    T_part <- sum(MR_part * Mw_part)/sqrt(length(Ytest))/sqrt(sigmahatw2_part)
-    return(T_part)
+    names(results) <- variance_estimator
+    return(results)
   }
   return(get_T_stat)
 }
 
 
-# multiple_beta_handling is either "tune_everywhere", "tune_at_liml" or "partition_at_liml"
+
