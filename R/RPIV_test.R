@@ -286,7 +286,8 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
 #' @param upper_clip_quantile A scalar between 0 and 1. The estimated weight-function will be clipped at the corresponding quantile of the random forest predictions on the auxiliary sample. Use 0 to use the sign of the predictions. Default is 0.8.
 #' @param regr_par A list of parameters passed to the random forest regression model. Supports `num.trees`, `num_mtry` (number of different mtry values to try out) or a vector `mtry`, a vector `max.depth`, `num_min.node.size` (number of different min.node.size values to try out) or a vector `min.node.size`.
 #' @param fit_intercept Logical. Should an intercept be included in the model (added to C)? Default is `TRUE`.
-#' @param fit_at_tsls Logical. If `TRUE`, a random forest is initially tuned and fitted at the TSLS estimator. Subsequent evaluations may reuse this tuning or the learned partition structure.
+#' @param fit_at_tsls Logical. If `TRUE`, a random forest is initially tuned and fitted at the TSLS estimator. Subsequent evaluations may reuse this tuning or the learned partition structure. Default is `TRUE`.
+#' @param use_C_for_prediction Logical. If `TRUE`, the random forest uses both `Z` and `C` as predictors. If `FALSE`, only Z is used. Default is `TRUE`.
 #'
 #' @return
 #' A function `f(beta, type)` that computes the weak RPIV test statistic.
@@ -343,7 +344,8 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
 weak_RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
                            variance_estimator = "heteroskedastic", clustering = NULL,
                            upper_clip_quantile = 0.8, regr_par = list(),
-                           fit_intercept = TRUE, fit_at_tsls = TRUE){
+                           fit_intercept = TRUE, fit_at_tsls = TRUE,
+                           use_C_for_prediction = TRUE){
   Y <- try(as.numeric(Y), silent = TRUE)
   if (inherits(Y, "try-error")){
     stop("Y cannot be converted to a vector.")
@@ -456,13 +458,28 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
   } else {
     MYtrain <- Ytrain
     MXtrain <- Xtrain
+    use_C_for_prediction <- FALSE
+  }
+
+
+  if(use_C_for_prediction){
+    if(fit_intercept){
+      Zbartrain <- cbind(Ctrain[, -1], Ztrain)
+      Zbartest <- cbind(Ctest[, -1], Ztest)
+    } else {
+      Zbartrain <- cbind(Ctrain, Ztrain)
+      Zbartest <- cbind(Ctest, Ztest)
+    }
+  } else {
+    Zbartrain <- Ztrain
+    Zbartest <- Ztest
   }
 
   if(fit_at_tsls){
     fitted_first_stage <- lm(MXtrain ~ -1 + Ztrain)$fitted.values
     beta_tsls <- lm(MYtrain ~ -1 + fitted_first_stage)$coefficients
     resid_tsls <- MYtrain - MXtrain %*% beta_tsls
-    tuned_rf <- tune_rf(resid_tsls, Ztrain, Ztest = NULL, regr_par)
+    tuned_rf <- tune_rf(resid_tsls, Zbartrain, Ztest = NULL, regr_par)
   }
   # type is either "tune_and_fit", "fit", "recalculate"
   # "tune_and_fit" retunes and fits the random forest. "fit" uses the tuning parameters of the tsls residuals. "recalculate" uses the partition
@@ -476,17 +493,17 @@ weak_RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
     }
     resid <- MYtrain - MXtrain %*% beta
     if(type == "tune_and_fit"){
-      rf_beta <- tune_rf(resid, Ztrain, Ztest, regr_par)
+      rf_beta <- tune_rf(resid, Zbartrain, Zbartest, regr_par)
       w_train <- rf_beta$pred_train
       w0 <- rf_beta$pred_test
     } else if(type == "fit"){
       if(!fit_at_tsls){stop("fit_at_tsls needs to be TRUE in order to use type == 'fit'.")}
-      rf_beta <- get_rf_predictions_from_tuned(resid, Ztrain, Ztest, tuned_rf$par_opt)
+      rf_beta <- get_rf_predictions_from_tuned(resid, Zbartrain, Zbartest, tuned_rf$par_opt)
       w_train <- rf_beta$pred_train
       w0 <- rf_beta$pred_test
     } else if(type == "recalculate"){
       if(!fit_at_tsls){stop("fit_at_tsls needs to be TRUE in order to use type == 'recalculate'.")}
-      list_pred <- refit_from_partition(resid, Ztrain, Ztest, tuned_rf$mod)
+      list_pred <- refit_from_partition(resid, Zbartrain, Zbartest, tuned_rf$mod)
       w_train <- list_pred$pred_insample
       w0 <- list_pred$pred_outsample
     } else {

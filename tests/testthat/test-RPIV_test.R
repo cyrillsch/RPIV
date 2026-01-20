@@ -355,3 +355,21 @@ test_that("test_fun returned weak_RPIV_test is deterministic when type = 'recalc
 
   expect_true(abs(T1 - T2) < 10^(-10))
 })
+
+
+test_that("weak_RPIV_test detects misspecification in C if use_C_for_prediction = TRUE (default),
+          but not if use_C_for_prediction = FALSE", {
+  set.seed(1)
+  n <- 100
+  Z <- rnorm(n)
+  C <- rnorm(n)
+  X <- Z + rnorm(n)
+  Y <- sign(C)
+  test_fun1 <- weak_RPIV_test(Y, X, C, Z, use_C_for_prediction = FALSE)
+  T1 <- test_fun1(beta = 0, type = "recalculate")
+  expect_false(T1 > 4)
+  test_fun2 <- weak_RPIV_test(Y, X, C, Z)
+  T2 <- test_fun2(beta = 0, type = "recalculate")
+  expect_true(T2 > 4)
+
+})
