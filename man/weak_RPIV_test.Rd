@@ -2,7 +2,7 @@
 % Please edit documentation in R/RPIV_test.R
 \name{weak_RPIV_test}
 \alias{weak_RPIV_test}
-\title{Weak IV Robust Residual Prediction Test for Linear Instrumental Variable Models}
+\title{Weak-IV-Robust Residual Prediction Test for Linear Instrumental Variable Models}
 \usage{
 weak_RPIV_test(
   Y,

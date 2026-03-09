@@ -263,7 +263,7 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
 
 
 
-#' Weak IV Robust Residual Prediction Test for Linear Instrumental Variable Models
+#' Weak-IV-Robust Residual Prediction Test for Linear Instrumental Variable Models
 #'
 #' Constructs a hypothesis test for the well-specification of linear instrumental variable
 #' (IV) model at a particular value of the parameter.
