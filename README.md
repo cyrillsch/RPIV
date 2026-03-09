@@ -26,24 +26,23 @@ package provides two related procedures:
 The main question addressed by the package is whether the linear IV
 model is an appropriate description of the data.
 
-More formally, the standard test targets the null hypothesis $$
-H_0:\ \exists \beta \in \mathbb R^p \text{ such that } \mathbb E[Y_i - X_i^T\beta \mid Z_i] = 0 \quad \text{a.s.}
-$$ which is implied by the well-specification of the linear IV model
-(with mean-independence assumption on the errors).
+More formally, the standard test targets the null hypothesis
+$H_0:\ \exists \beta \in \mathbb R^p \text{ such that } \mathbb E[Y_i - X_i^T\beta \mid Z_i] = 0 \quad \text{a.s.}$
+which is implied by the well-specification of the linear IV model (with
+mean-independence assumption on the errors).
 
 When exogenous controls are present, the model is understood as allowing
 for an additional linear term in $C_i$, and in the standard
 implementation these controls are added both to $X$ and to $Z$.
 
 The weak-IV-robust procedure instead considers, for a fixed candidate
-value $\beta_0 \in \mathbb R^p$, the null hypothesis $$
-H_0(\beta_0):\ \exists \theta \in \mathbb R^q \text{ such that }
-\mathbb E[Y_i - X_i^T\beta_0 - C_i^T\theta \mid Z_i, C_i] = 0 \quad \text{a.s.}
-$$ By fixing $\beta_0$, the test avoids relying on strong
-identification. Inverting the test over a grid of candidate values
-yields a confidence set for the endogenous coefficient(s). If this
-confidence set is empty, the data provide evidence against
-well-specification.
+value $\beta_0 \in \mathbb R^p$, the null hypothesis
+$H_0(\beta_0):\ \exists \theta \in \mathbb R^q \text{ such that }
+\mathbb E[Y_i - X_i^T\beta_0 - C_i^T\theta \mid Z_i, C_i] = 0 \quad \text{a.s.}$
+By fixing $\beta_0$, the test avoids relying on strong identification.
+Inverting the test over a grid of candidate values yields a confidence
+set for the endogenous coefficient(s). If this confidence set is empty,
+the data provide evidence against well-specification.
 
 The underlying idea of both tests is to check for signal in the
 residuals using a random forest. For a detailed discussion of the
