@@ -41,7 +41,6 @@ calc_sigmahatw2_weak <- function(variance_estimator, MR_part, Mw_part, clusterin
     return(mean(MR_part^2 * Mw_part^2) - mean(MR_part * Mw_part)^2)
   }
   if(variance_estimator == "cluster"){
-    ##DOUBLE CHECK HERE
     Sg <- tapply(MR_part* Mw_part, clustering_test, sum)
     n0 <- length(Mw_part)
     return(sum(Sg^2) / n0 - n0/length(unique(clustering_test))*sum(Sg/n0)^2)
@@ -108,8 +107,6 @@ calc_sigmahatw2_weak <- function(variance_estimator, MR_part, Mw_part, clusterin
 #' @importFrom stats formula lm pnorm predict quantile
 #' @import ranger
 #' @export
-
-
 RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
                       variance_estimator = "heteroskedastic", clustering = NULL,
                       upper_clip_quantile = 0.8, regr_par = list(), fit_intercept = TRUE){
