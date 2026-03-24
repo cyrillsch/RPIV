@@ -271,6 +271,6 @@ More examples can be found in Scheidegger, Londschien and Bühlmann
 
 ## References
 
-Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. *A residual
-prediction test for the well-specification of linear instrumental
+Cyrill Scheidegger, Malte Londschien and Peter Bühlmann.
+*Machine-learning-powered specification testing in linear instrumental
 variable models*. Preprint, arXiv:2506.12771, 2025.

@@ -105,5 +105,5 @@ test_statistic2(1, "recalculate")
 
 }
 \references{
-Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, \url{doi:10.48550/arXiv.2506.12771}, 2025.
+Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. Machine-learning-powered specification testing in linear instrumental variable models. Preprint, \url{doi:10.48550/arXiv.2506.12771}, 2025.
 }

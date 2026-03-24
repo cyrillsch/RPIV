@@ -102,7 +102,7 @@ calc_sigmahatw2_weak <- function(variance_estimator, MR_part, Mw_part, clusterin
 #'
 #'
 #' @references
-#' Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, <doi:10.48550/arXiv.2506.12771>, 2025.
+#' Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. Machine-learning-powered specification testing in linear instrumental variable models. Preprint, <doi:10.48550/arXiv.2506.12771>, 2025.
 #'
 #' @importFrom stats formula lm pnorm predict quantile
 #' @import ranger
@@ -333,7 +333,7 @@ RPIV_test <- function(Y, X, C = NULL, Z, frac_A = NULL, gamma = 0.05,
 #' test_statistic2(1, "recalculate")
 #'
 #' @references
-#' Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. A residual prediction test for the well-specification of linear instrumental variable models. Preprint, <doi:10.48550/arXiv.2506.12771>, 2025.
+#' Cyrill Scheidegger, Malte Londschien and Peter Bühlmann. Machine-learning-powered specification testing in linear instrumental variable models. Preprint, <doi:10.48550/arXiv.2506.12771>, 2025.
 #'
 #' @importFrom stats formula lm
 #' @import ranger
